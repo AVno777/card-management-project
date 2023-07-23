@@ -26,17 +26,17 @@ client
     app.use(cors());
 
     //api account
-    app.get("/accounts", (req, res) => {
+    app.get("/accounts", authenticate, (req, res) => {
       accountsCollection
         .find()
         .toArray()
         .then((_accounts) => {
-          console.log("aaaaaaaaaaaaaaa", _accounts);
+          //console.log("aaaaaaaaaaaaaaa", _accounts);
           res.status(200).send(_accounts);
         });
     });
 
-    app.get("/accounts/:id", (req, res) => {
+    app.get("/accounts/:id", authenticate, (req, res) => {
       let id = req.params.id;
       id = +id;
       if (isNaN(id)) {
@@ -47,75 +47,75 @@ client
       });
     });
 
-    app.post("/accounts", async (req, res) => {
+    app.post("/accounts", authenticate, async (req, res) => {
       // todo: checktoken
-      // console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
-
-      console.log(req.body);
+      // //console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
+      //console.log(req.body);
       let id = Math.ceil(Math.random() * 1000);
-      let user = {
+      let account = {
         id,
         userName: req.body.userName,
         password: req.body.password,
+        isAdmin: req.body.isAdmin,
       };
-      const result = await accountsCollection.insertOne(user);
+      const result = await accountsCollection.insertOne(account);
       if (result.acknowledged) return res.status(200).send(true);
       else return res.status(500).send("Internal server error");
     });
 
-    app.patch("/accounts:id", async (req, res) => {
-      console.log(req.body);
-      console.log("11111111111", req.params.id);
+    app.patch("/accounts:id", authenticate, async (req, res) => {
+      //console.log(req.body);
+      //console.log("11111111111", req.params.id);
       let id = req.params.id;
       id = +id;
-      console.log("33333333333333", id);
+      //console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
       accountsCollection.findOne({ id: id }).then((userInst) => {
-        userInst.name = req.body.name;
-        userInst.gender = req.body.gender;
-        userInst.roleId = req.body.roleId;
+        userInst.username = req.body.username;
+        userInst.password = req.body.password;
+        userInst.isAdmin = req.body.isAdmin;
         accountsCollection
           .updateOne({ id }, { $set: userInst })
           .then((_res) => {
-            console.log("22222222222222222", userInst);
+            //console.log("22222222222222222", userInst);
             res.status(200).send();
           });
       });
     });
 
-    app.put("/accounts/:id", async (req, res) => {
-      console.log(req.body);
-      console.log("11111111111", req.params.id);
+    app.put("/accounts/:id", authenticate, async (req, res) => {
+      //console.log(req.body);
+      //console.log("11111111111", req.params.id);
       let id = req.params.id;
       id = +id;
-      console.log("33333333333333", id);
+      //console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
-      accountsCollection.findOne({ id: id }).then((userInst) => {
-        userInst.username = req.body.username || userInst.username;
-        userInst.password = req.body.password || userInst.password;
-
+      accountsCollection.findOne({ id: id }).then((accountInst) => {
+        accountInst.username = req.body.username || accountInst.username;
+        accountInst.password = req.body.password || accountInst.password;
+        accountInst.isAdmin = req.body.isAdmin || accountInst.isAdmin;
         accountsCollection
-          .updateOne({ id }, { $set: userInst })
+          .updateOne({ id }, { $set: accountInst })
           .then((_res) => {
-            console.log("22222222222222222", userInst);
+            //console.log("22222222222222222", accountInst);
             res.status(200).send();
           });
       });
     });
 
-    app.delete("/accounts/:id", async (req, res) => {
+    app.delete("/accounts/:id", authenticate, async (req, res) => {
       let id = req.params.id;
       id = +id;
-      console.log("33333333333333", id);
+      //console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
       accountsCollection.deleteOne({ id: id }).then((_res) => {
-        console.log("22222222222222222", _res);
+        //console.log("22222222222222222", _res);
         if (_res.acknowledged) {
           if (_res.deletedCount == 1) {
             return res.status(200).send("Delete successfuly");
@@ -135,7 +135,7 @@ client
         .find()
         .toArray()
         .then((_cards) => {
-          console.log("aaaaaaaaaaaaaaa", _cards);
+          //console.log("aaaaaaaaaaaaaaa", _cards);
           res.status(200).send(_cards);
         });
     });
@@ -153,11 +153,11 @@ client
 
     app.post("/cards", async (req, res) => {
       // todo: checktoken
-      // console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
+      // //console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
 
-      console.log(req.body);
+      //console.log(req.body);
       let id = Math.ceil(Math.random() * 1000);
-      let user = {
+      let card = {
         id,
         cardCode: req.body.cardCode,
         identificationCode: req.body.identificationCode,
@@ -231,17 +231,17 @@ client
         floor63: req.body.floor63,
         floor64: req.body.floor64,
       };
-      const result = await cardsCollection.insertOne(user);
+      const result = await cardsCollection.insertOne(card);
       if (result.acknowledged) return res.status(200).send(true);
       else return res.status(500).send("Internal server error");
     });
 
     app.patch("/cards/:id", async (req, res) => {
-      console.log(req.body);
-      console.log("11111111111", req.params.id);
+      //console.log(req.body);
+      //console.log("11111111111", req.params.id);
       let id = req.params.id;
       id = +id;
-      console.log("33333333333333", id);
+      //console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
@@ -317,19 +317,19 @@ client
         cardInst.floor62 = req.body.floor62;
         cardInst.floor63 = req.body.floor63;
         cardInst.floor64 = req.body.floor64;
-        cardsCollection.updateOne({ id }, { $set: userInst }).then((_res) => {
-          console.log("22222222222222222", userInst);
+        cardsCollection.updateOne({ id }, { $set: cardInst }).then((_res) => {
+          //console.log("22222222222222222", cardInst);
           res.status(200).send();
         });
       });
     });
 
     app.put("/cards/:id", async (req, res) => {
-      console.log(req.body);
-      console.log("11111111111", req.params.id);
+      //console.log(req.body);
+      //console.log("11111111111", req.params.id);
       let id = req.params.id;
       id = +id;
-      console.log("33333333333333", id);
+      //console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
@@ -407,8 +407,8 @@ client
         cardInst.floor62 = req.body.floor62 || req.body.floor62;
         cardInst.floor63 = req.body.floor63 || req.body.floor63;
         cardInst.floor64 = req.body.floor64 || req.body.floor64;
-        cardsCollection.updateOne({ id }, { $set: userInst }).then((_res) => {
-          console.log("22222222222222222", userInst);
+        cardsCollection.updateOne({ id }, { $set: cardInst }).then((_res) => {
+          //console.log("22222222222222222", cardInst);
           res.status(200).send();
         });
       });
@@ -417,12 +417,12 @@ client
     app.delete("/cards/:id", async (req, res) => {
       let id = req.params.id;
       id = +id;
-      console.log("33333333333333", id);
+      //console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
       cardsCollection.deleteOne({ id: id }).then((_res) => {
-        console.log("22222222222222222", _res);
+        //console.log("22222222222222222", _res);
         if (_res.acknowledged) {
           if (_res.deletedCount == 1) {
             return res.status(200).send("Delete successfuly");
@@ -484,53 +484,53 @@ client
 
     app.post("/events", async (req, res) => {
       // todo: checktoken
-      // //console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
+      // ////console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
 
-      //console.log(req.body);
+      ////console.log(req.body);
       let id = Math.ceil(Math.random() * 1000);
-      let user = {
+      let event = {
         id,
         idCard: req.body.idCard,
         eventDate: req.body.eventDate,
       };
-      const result = await usersCollection.insertOne(user);
+      const result = await usersCollection.insertOne(event);
       if (result.acknowledged) return res.status(200).send(true);
       else return res.status(500).send("Internal server error");
     });
 
     app.patch("/events/:id", async (req, res) => {
-      //console.log(req.body);
-      //console.log("11111111111", req.params.id);
+      ////console.log(req.body);
+      ////console.log("11111111111", req.params.id);
       let id = req.params.id;
       id = +id;
-      //console.log("33333333333333", id);
+      ////console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
-      eventsCollection.findOne({ id: id }).then((userInst) => {
-        (userInst.idCard = req.body.idCard),
-          (userInst.eventDate = req.body.eventDate);
-        eventsCollection.updateOne({ id }, { $set: userInst }).then((_res) => {
-          //console.log("22222222222222222", userInst);
+      eventsCollection.findOne({ id: id }).then((eventInst) => {
+        eventInst.idCard = req.body.idCard;
+        eventInst.eventDate = req.body.eventDate;
+        eventsCollection.updateOne({ id }, { $set: eventInst }).then((_res) => {
+          ////console.log("22222222222222222", userInst);
           res.status(200).send();
         });
       });
     });
 
     app.put("/events/:id", async (req, res) => {
-      //console.log(req.body);
-      //console.log("11111111111", req.params.id);
+      ////console.log(req.body);
+      ////console.log("11111111111", req.params.id);
       let id = req.params.id;
       id = +id;
-      //console.log("33333333333333", id);
+      ////console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
-      eventsCollection.findOne({ id: id }).then((userInst) => {
-        userInst.idCard = req.body.idCard || userInst.name;
-        userInst.eventDate = req.body.eventDate || userInst.eventDate;
-        eventsCollection.updateOne({ id }, { $set: userInst }).then((_res) => {
-          //console.log("22222222222222222", userInst);
+      eventsCollection.findOne({ id: id }).then((eventInst) => {
+        eventInst.idCard = req.body.idCard || eventInst.idCard;
+        eventInst.eventDate = req.body.eventDate || eventInst.eventDate;
+        eventsCollection.updateOne({ id }, { $set: eventInst }).then((_res) => {
+          ////console.log("22222222222222222", userInst);
           res.status(200).send();
         });
       });
@@ -539,12 +539,12 @@ client
     app.delete("/events/:id", async (req, res) => {
       let id = req.params.id;
       id = +id;
-      //console.log("33333333333333", id);
+      ////console.log("33333333333333", id);
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
       eventsCollection.deleteOne({ id: id }).then((_res) => {
-        //console.log("22222222222222222", _res);
+        ////console.log("22222222222222222", _res);
         if (_res.acknowledged) {
           if (_res.deletedCount == 1) {
             return res.status(200).send("Delete successfuly");
@@ -560,7 +560,24 @@ client
     //app.use("/api/login", loginController);
   })
   .catch((err) => {
-    console.log("Connect to db got error: ", err);
+    //console.log("Connect to db got error: ", err);
   });
+
+function authenticate(req, res, next) {
+  const { username, password } = req.body;
+
+  const user = users.find(
+    (user) => user.username === username && user.password === password
+  );
+
+  if (user && user.isAdmin) {
+    // User is authenticated and is an admin
+    req.user = user; // Attach the user object to the request for further use
+    next();
+  } else {
+    // Invalid credentials or non-admin user
+    res.status(401).json({ error: "Invalid credentials or non-admin user" });
+  }
+}
 
 app.listen(3002);
