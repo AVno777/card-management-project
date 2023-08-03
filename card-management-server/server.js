@@ -1,7 +1,9 @@
 const express = require("express");
 const cors = require("cors");
+const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
 const app = express();
+const io = new Server(server);
 
 const url = "mongodb://127.0.0.1:27017";
 const client = new MongoClient(url);
@@ -12,11 +14,6 @@ const accountsCollection = db.collection("Accounts");
 const cardsCollection = db.collection("Cards");
 const eventsCollection = db.collection("Events");
 
-const accountController = require("./controllers/accountController");
-const cardController = require("./controllers/cardController");
-const eventController = require("./controllers/eventController");
-const loginController = require("./controllers/loginController");
-
 client
   .connect()
   .then(() => {
@@ -26,7 +23,7 @@ client
     app.use(cors());
 
     //api account
-    app.get("/accounts", authenticate, (req, res) => {
+    app.get("/api/accounts", authenticate, (req, res) => {
       accountsCollection
         .find()
         .toArray()
@@ -36,7 +33,7 @@ client
         });
     });
 
-    app.get("/accounts/:id", authenticate, (req, res) => {
+    app.get("/api/accounts/:id", authenticate, (req, res) => {
       let id = req.params.id;
       id = +id;
       if (isNaN(id)) {
@@ -47,7 +44,7 @@ client
       });
     });
 
-    app.post("/accounts", authenticate, async (req, res) => {
+    app.post("/api/accounts", authenticate, async (req, res) => {
       // todo: checktoken
       // //console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
       //console.log(req.body);
@@ -63,7 +60,7 @@ client
       else return res.status(500).send("Internal server error");
     });
 
-    app.patch("/accounts:id", authenticate, async (req, res) => {
+    app.patch("/api/accounts:id", authenticate, async (req, res) => {
       //console.log(req.body);
       //console.log("11111111111", req.params.id);
       let id = req.params.id;
@@ -85,7 +82,7 @@ client
       });
     });
 
-    app.put("/accounts/:id", authenticate, async (req, res) => {
+    app.put("/api/accounts/:id", authenticate, async (req, res) => {
       //console.log(req.body);
       //console.log("11111111111", req.params.id);
       let id = req.params.id;
@@ -107,7 +104,7 @@ client
       });
     });
 
-    app.delete("/accounts/:id", authenticate, async (req, res) => {
+    app.delete("/api/accounts/:id", authenticate, async (req, res) => {
       let id = req.params.id;
       id = +id;
       //console.log("33333333333333", id);
@@ -130,28 +127,139 @@ client
     });
 
     //api card
-    app.get("/cards", (req, res) => {
-      cardsCollection
-        .find()
-        .toArray()
-        .then((_cards) => {
-          //console.log("aaaaaaaaaaaaaaa", _cards);
-          res.status(200).send(_cards);
+    app.get("/api/cards", async (req, res) => {
+      try {
+        const { keyword, page, limit } = req.query;
+        const currentPage = parseInt(page, 10) || 1;
+        const itemsPerPage = parseInt(limit, 10) || 10;
+
+        const aggregateQuery = [];
+
+        aggregateQuery.push({
+          $project: {
+            id: 1,
+            cardCode: 1,
+            identificationCode: 1,
+            createdDate: 1,
+            activeStatuses: 1,
+            ownerName: 1,
+            apartment: 1,
+            floor01: 1,
+            floor02: 1,
+            floor03: 1,
+            floor04: 1,
+            floor05: 1,
+            floor06: 1,
+            floor07: 1,
+            floor08: 1,
+            floor09: 1,
+            floor10: 1,
+            floor11: 1,
+            floor12: 1,
+            floor13: 1,
+            floor14: 1,
+            floor15: 1,
+            floor16: 1,
+            floor17: 1,
+            floor18: 1,
+            floor19: 1,
+            floor20: 1,
+            floor21: 1,
+            floor22: 1,
+            floor23: 1,
+            floor24: 1,
+            floor25: 1,
+            floor26: 1,
+            floor27: 1,
+            floor28: 1,
+            floor29: 1,
+            floor30: 1,
+            floor31: 1,
+            floor32: 1,
+            floor33: 1,
+            floor34: 1,
+            floor35: 1,
+            floor36: 1,
+            floor37: 1,
+            floor38: 1,
+            floor39: 1,
+            floor40: 1,
+            floor41: 1,
+            floor42: 1,
+            floor43: 1,
+            floor44: 1,
+            floor45: 1,
+            floor46: 1,
+            floor47: 1,
+            floor48: 1,
+            floor49: 1,
+            floor50: 1,
+            floor51: 1,
+            floor52: 1,
+            floor53: 1,
+            floor54: 1,
+            floor55: 1,
+            floor56: 1,
+            floor57: 1,
+            floor58: 1,
+            floor59: 1,
+            floor60: 1,
+            floor61: 1,
+            floor62: 1,
+            floor63: 1,
+            floor64: 1,
+          },
         });
+
+        if (typeof keyword === "string" && keyword.length > 0) {
+          aggregateQuery.push({
+            $match: {
+              $or: [
+                { cardCode: { $regex: keyword, $options: "i" } },
+                { identificationCode: { $regex: keyword, $options: "i" } },
+                { ownerName: { $regex: keyword, $options: "i" } },
+              ],
+            },
+          });
+        }
+
+        const skip = (currentPage - 1) * itemsPerPage;
+        aggregateQuery.push({ $skip: skip }, { $limit: itemsPerPage });
+
+        const cardData = await cardsCollection
+          .aggregate(aggregateQuery)
+          .toArray();
+
+        const totalItems = await eventsCollection.countDocuments();
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        if (currentPage > totalPages) {
+          throw new Error("Error page");
+        }
+        res.json({
+          currentPage,
+          itemsPerPage,
+          totalPages,
+          totalItems,
+          items: cardData,
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     });
 
-    app.get("/cards/:id", (req, res) => {
+    app.get("/api/cards/:id", (req, res) => {
       let id = req.params.id;
       id = +id;
       if (isNaN(id)) {
         return res.status(400).send("Id must be number");
       }
-      cardsCollection.findOne({ id }).then((_user) => {
-        res.status(200).send(_user);
+      cardsCollection.findOne({ id }).then((_card) => {
+        res.status(200).send(_card);
       });
     });
 
-    app.post("/cards", async (req, res) => {
+    app.post("/api/cards", async (req, res) => {
       // todo: checktoken
       // //console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
 
@@ -236,7 +344,7 @@ client
       else return res.status(500).send("Internal server error");
     });
 
-    app.patch("/cards/:id", async (req, res) => {
+    app.patch("/api/cards/:id", async (req, res) => {
       //console.log(req.body);
       //console.log("11111111111", req.params.id);
       let id = req.params.id;
@@ -324,7 +432,7 @@ client
       });
     });
 
-    app.put("/cards/:id", async (req, res) => {
+    app.put("/api/cards/:id", async (req, res) => {
       //console.log(req.body);
       //console.log("11111111111", req.params.id);
       let id = req.params.id;
@@ -414,7 +522,7 @@ client
       });
     });
 
-    app.delete("/cards/:id", async (req, res) => {
+    app.delete("/api/cards/:id", async (req, res) => {
       let id = req.params.id;
       id = +id;
       //console.log("33333333333333", id);
@@ -437,52 +545,94 @@ client
     });
 
     //api events
-    app.get("/events", async (req, res) => {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-
+    app.get("/api/events", async (req, res) => {
       try {
-        const totalEvents = await eventsCollection.countDocuments();
-        const events = await eventsCollection.find().skip(skip).limit(limit);
+        const { keyword, startDate, endDate, page, limit } = req.query;
+        const currentPage = parseInt(page, 10) || 1;
+        const itemsPerPage = parseInt(limit, 10) || 10;
+
+        const aggregateQuery = [];
+
+        aggregateQuery.push({
+          $lookup: {
+            from: "Cards",
+            localField: "idCard",
+            foreignField: "id",
+            as: "matchedCards",
+          },
+        });
+
+        aggregateQuery.push({
+          $project: {
+            id: 1,
+            idCard: 1,
+            eventDate: 1,
+          },
+        });
+
+        if (typeof keyword === "string" && keyword.length > 0) {
+          aggregateQuery.push({
+            $match: {
+              $or: [
+                {
+                  "matchedCards.identificationCode": {
+                    $regex: keyword,
+                    $options: "i",
+                  },
+                },
+                {
+                  "matchedCards.ownerName": {
+                    $regex: keyword,
+                    $options: "i",
+                  },
+                },
+              ],
+              eventDate: {
+                $gte: startDate ? new Date(startDate) : new Date(0),
+                $lte: endDate ? new Date(endDate) : new Date(),
+              },
+            },
+          });
+        }
+
+        const skip = (currentPage - 1) * itemsPerPage;
+        aggregateQuery.push({ $skip: skip }, { $limit: itemsPerPage });
+
+        const eventsData = await eventsCollection
+          .aggregate(aggregateQuery)
+          .toArray();
+
+        const totalItems = await eventsCollection.countDocuments();
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        if (currentPage > totalPages) {
+          throw new Error("Error page");
+        }
+
         res.json({
-          total: totalEvents,
-          currentPage: page,
-          totalPages: Math.ceil(totalEvents / limit),
-          data: events,
+          currentPage,
+          itemsPerPage,
+          totalPages,
+          totalItems,
+          items: eventsData,
         });
       } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: error.message });
       }
     });
 
-    app.get("/events/date", async (req, res) => {
-      let startDate = new Date(req.query.start);
-      let endDate = new Date(req.query.end);
-
-      try {
-        const events = await eventsCollection.find({
-          eventDate: { $gte: startDate, $lte: endDate },
-        });
-
-        res.json(events);
-      } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+    app.get("/api/events/:id", (req, res) => {
+      let id = req.params.id;
+      id = +id;
+      if (isNaN(id)) {
+        return res.status(400).send("Id must be number");
       }
+      eventsCollection.findOne({ id }).then((_event) => {
+        res.status(200).send(_event);
+      });
     });
 
-    app.get("/eventsidCard/:idCard", async (req, res) => {
-      const idCard = req.params.idCard;
-
-      try {
-        const events = await eventsCollection.find({ idCard });
-        res.json(events);
-      } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
-      }
-    });
-
-    app.post("/events", async (req, res) => {
+    app.post("/api/events", async (req, res) => {
       // todo: checktoken
       // ////console.log('aaaaaaaaaaaaaaaaa', req.headers.token);
 
@@ -493,12 +643,12 @@ client
         idCard: req.body.idCard,
         eventDate: req.body.eventDate,
       };
-      const result = await usersCollection.insertOne(event);
+      const result = await eventsCollection.insertOne(event);
       if (result.acknowledged) return res.status(200).send(true);
       else return res.status(500).send("Internal server error");
     });
 
-    app.patch("/events/:id", async (req, res) => {
+    app.patch("/api/events/:id", async (req, res) => {
       ////console.log(req.body);
       ////console.log("11111111111", req.params.id);
       let id = req.params.id;
@@ -517,7 +667,7 @@ client
       });
     });
 
-    app.put("/events/:id", async (req, res) => {
+    app.put("/api/events/:id", async (req, res) => {
       ////console.log(req.body);
       ////console.log("11111111111", req.params.id);
       let id = req.params.id;
@@ -536,7 +686,7 @@ client
       });
     });
 
-    app.delete("/events/:id", async (req, res) => {
+    app.delete("/api/events/:id", async (req, res) => {
       let id = req.params.id;
       id = +id;
       ////console.log("33333333333333", id);
@@ -558,26 +708,39 @@ client
       });
     });
     //app.use("/api/login", loginController);
+    app.post("/login", authenticate, (req, res) => {
+      console.log("11111111111111111111", req.body);
+      const username = req.body.username;
+      const password = req.body.password;
+      accountsCollection.findOne({ username: username }).then((userInst) => {
+        console.log("aaaaaaaaaaaaaaaaaa", userInst);
+        if (!userInst) return res.status(400).send("Username Not found");
+        if (userInst.password != password)
+          return res.status(400).send("Incorrent password");
+      });
+    });
   })
   .catch((err) => {
-    //console.log("Connect to db got error: ", err);
+    console.log("Connect to db got error: ", err);
   });
 
 function authenticate(req, res, next) {
   const { username, password } = req.body;
 
-  const user = users.find(
+  const user = accountsCollection.find(
     (user) => user.username === username && user.password === password
   );
 
   if (user && user.isAdmin) {
-    // User is authenticated and is an admin
-    req.user = user; // Attach the user object to the request for further use
+    req.user = user;
     next();
   } else {
-    // Invalid credentials or non-admin user
     res.status(401).json({ error: "Invalid credentials or non-admin user" });
   }
 }
 
-app.listen(3002);
+function randomString() {
+  return Math.random().toString(36).substr(3, 6);
+}
+
+app.listen(4001);
